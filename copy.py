@@ -153,7 +153,7 @@ def vibor(num, x, y, col=None, type_=None):
     type_figure_from = 'pawn' if col else None
     write_sql(
         f"""insert into moves (id, id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from)
-         values(?, ?, ?, ?, ?, ?, ?)""",
+         values(?, ?, ?, ?, ?, ?, ?, ?)""",
         ex.id, get_id(), type_move, f"{x}{y}", f"{x}{y}", type_figure_from, typ, color
     )
     ex.set_order('white' if color == 'black' else 'black')
@@ -245,6 +245,7 @@ def make_label(filename, x, y):
 
 def possib_move(x, y, figur, mov_fight=True):
     name = figur.get_typ()
+    invert_color = figur.get_insert_color()
     if name == 'knight':
         return [
             [x1, y1]
@@ -487,7 +488,15 @@ class Chess(QMainWindow):
                 field[from_y][from_x] = Figure(make_label(f"chess_progect/{color_from}/{type_figure_from}", from_x, from_y), type_figure_from, color_from)
                 checking(color_from)
             elif type_move == 'place':
-                pass
+                field[from_y][from_x].get_label().deleteLater()
+                field[from_y][from_x] = '*'
+                checking(color_from)
+            elif type_move == 'pawn':
+                field[from_y][from_x].get_label().deleteLater()
+                field[from_y][from_x] = Figure(
+                    make_label(f"chess_progect/{color_from}/pawn", from_x, from_y), type_figure_from,
+                    color_from)
+                checking(color_from)
             check_light()
             write_sql(f"delete from moves where id_move = {id_move}")
 
@@ -540,19 +549,39 @@ class Chess(QMainWindow):
         if self.is_dragging:
             self.for_move.move(int(cursor_pos.x() - 50), int(cursor_pos.y() - 50))
 
-    def rooking(self, figur, typ, color, x, y):
+    def rooking(self, typ, color, x, y):
+        f = False
+        type_move = 'move'
         if typ == 'king' and color == 'white' and x == 2 and y == 0:
             field[0][0].get_label().move(3 * 100 + 50, 800 - 50)
             field[0][3], field[0][0] = field[0][0], '*'
+            y1, x1 = 0, 0
+            y, x = 0, 3
+            f = True
         elif typ == 'king' and color == 'white' and x == 6 and y == 0:
             field[0][7].get_label().move(5 * 100 + 50, 800 - 50)
             field[0][5], field[0][7] = field[0][7], '*'
+            y1, x1 = 0, 7
+            y, x = 0, 5
+            f = True
         elif typ == 'king' and color == 'black' and x == 2 and y == 7:
             field[7][0].get_label().move(3 * 100 + 50, 50)
             field[7][3], field[7][0] = field[7][0], '*'
+            y1, x1 = 7, 0
+            y, x = 7, 3
+            f = True
         elif typ == 'king' and color == 'black' and x == 6 and y == 7:
             field[7][7].get_label().move(5 * 100 + 50, 50)
             field[7][5], field[7][7] = field[7][7], '*'
+            y1, x1 = 7, 7
+            y, x = 7, 5
+            f = True
+        if f:
+            write_sql(f"""
+                insert into 
+                moves (id, id_move, type_move, cord_from, cord_to)
+                values(?, ?, ?, ?, ?)""",
+                self.id, get_id(), type_move, f"{x1}{y1}", f"{x}{y}")
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -578,7 +607,7 @@ class Chess(QMainWindow):
                     else:
                         type_move = 'move'
                     type_figure_to = field[y][x].get_typ() if type_move == 'chop' else None
-                    color = field[y][x].get_color() if isinstance(field[y][x], Figure) else None
+                    color = field[y1][x1].get_color() if isinstance(field[y1][x1], Figure) else None
                     write_sql(f"""
                         insert into 
                         moves (id, id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from)
@@ -588,7 +617,7 @@ class Chess(QMainWindow):
                     if not self.order_is_not_important:
                         self.order = 'black' if self.order == 'white' else 'white'
                     self.music('move')
-                    # self.rooking(figur, typ, color, x, y)
+                    self.rooking(typ, color, x, y)
                     field[y1][x1].mov()
                     self.for_move.move(x * 100 + 50, 800 - (y * 100 + 50))
                     if isinstance(field[y][x], Figure):

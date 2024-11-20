@@ -5,19 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="df6fab64-3b93-4b81-841a-3fb2f2ef280d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/chess.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/delete_white.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/стараяверсия.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pythonProject4.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/chess_progect/field.png" beforeDir="false" afterPath="$PROJECT_DIR$/chess_progect/field.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chess_progect/black_win.png" beforeDir="false" afterPath="$PROJECT_DIR$/chess_progect/black_win.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/copy.py" beforeDir="false" afterPath="$PROJECT_DIR$/copy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/delete_fount.py" beforeDir="false" afterPath="$PROJECT_DIR$/delete_fount.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mov.sqlite" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mov.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/mov.sqlite" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
