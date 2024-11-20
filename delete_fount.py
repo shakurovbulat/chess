@@ -12,12 +12,13 @@ def add():
         cursor = conn.cursor()
         cursor.execute("""CREATE TABLE moves (
         id INTEGER,
-        start TEXT NOT NULL,
-        end TEXT NOT NULL,
-        type_from TEXT,
-        type_to TEXT,
-        color TEXT,
-        id_move INTEGER
+        id_move INTEGER,
+        type_move TEXT,
+        cord_from TEXT,
+        cord_to TEXT,
+        type_figure_from TEXT,
+        type_figure_to TEXT,
+        color_from TEXT
         );
         """)
 

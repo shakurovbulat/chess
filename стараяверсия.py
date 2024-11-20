@@ -1,25 +1,28 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QComboBox, QButtonGroup
-from PyQt6.QtGui import QPixmap, QFont, QIcon
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QComboBox
+from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtMultimedia import QSoundEffect
-from PyQt6.QtCore import QUrl, pyqtSignal, Qt, QEventLoop, QPropertyAnimation, QRect
+from PyQt6.QtCore import QUrl, pyqtSignal, Qt, QEventLoop
 import os
 import sqlite3
 from random import choice
 
 
+# чтение базы данных
 def read_sql(request, *args):
     with sqlite3.connect('mov.sqlite') as conn:
         cursor = conn.cursor()
         return cursor.execute(request, args).fetchall()
 
 
+# запись в базу данных
 def write_sql(request, *args):
     with sqlite3.connect('mov.sqlite') as conn:
         cursor = conn.cursor()
         cursor.execute(request, args)
 
 
+# проверка есть ли кароль на доске
 def queen_is_true(color):
     for figs in field:
         for fig in figs:
@@ -29,6 +32,7 @@ def queen_is_true(color):
     return False
 
 
+# проверка защищена фигура или нет
 def isprotected(x, y):
     global field
     if isinstance(field[y][x], Figure):
@@ -41,6 +45,7 @@ def isprotected(x, y):
     return True
 
 
+# итоговые возможные ходы с учетом всех правил
 def itog_possible_moves(x, y):
     global field
     figure = field[y][x]
@@ -66,6 +71,7 @@ def itog_possible_moves(x, y):
     return res
 
 
+# подсветка шаха
 def check_light():
     kings = set()
     for figs in field:
@@ -75,7 +81,15 @@ def check_light():
     for x, y in kings:
         if check_check(field[y][x].get_color()) == 'check':
             cors = cords_king(field[y][x].get_insert_color())
-            label = make_label(f"chess_progect/check.png", cors[0], cors[1])
+            label = QLabel(ex)
+            pixmap = QPixmap(f"chess_progect/check.png")
+            label.setPixmap(pixmap)
+            label.move(int(50 + cors[0] * 100), 50 + 700 - 100 * cors[1])
+            label.resize(pixmap.width(), pixmap.height())
+            label.setScaledContents(False)
+            label.setStyleSheet("background: transparent;")
+            label.lower()
+            label.show()
             if field[y][x].get_color() == 'black':
                 ex.check_black = label
             else:
@@ -90,6 +104,7 @@ def check_light():
                 ex.check_white = None
 
 
+# проверка мат/пат
 def check_mate_or_stale_mate(color_of_moved):
     color_of_king = 'white' if color_of_moved == 'black' else 'black'
     cord = cords_king(color_of_king)
@@ -108,6 +123,7 @@ def check_mate_or_stale_mate(color_of_moved):
     return 'draw'
 
 
+# проверка есть ли на доске шах
 def check_check(color_of_moved):
     color_of_king = 'white' if color_of_moved == 'black' else 'black'
     x, y = cords_king(color_of_king)
@@ -115,8 +131,11 @@ def check_check(color_of_moved):
         return 'check'
 
 
+# проверка на шах/мат/пат
 def checking(color_of_moved):
     mate_or_stale = check_mate_or_stale_mate(color_of_moved)
+    font = QFont()
+    font.setPointSize(80)
     if mate_or_stale == 'mate':
         print("Победа белых" if color_of_moved == 'white' else "Победа черных")
         # ex.create_end("Победа белых" if color_of_moved == 'white' else "Победа черных")
@@ -125,6 +144,7 @@ def checking(color_of_moved):
         # ex.create_end("Ничья")
 
 
+# функция возвращает тип фигуры в зависимоти от номера выбора
 def typ_of_fig(num):
     num = num if num <= 4 else num - 5
     if not num:
@@ -140,6 +160,7 @@ def typ_of_fig(num):
     return typ
 
 
+# функция выбора фигуры
 def vibor(num, x, y, col=None, type_=None):
     global field
     if isinstance(field[y][x], Figure) and field[y][x].get_typ() == 'king':
@@ -148,19 +169,23 @@ def vibor(num, x, y, col=None, type_=None):
         field[y][x].get_label().deleteLater()
     typ = typ_of_fig(num)
     color = col if col else 'black' if num <= 4 else 'white'
-    field[y][x] = Figure(make_label(f"chess_progect/{color}/{typ}.png", x, y), typ, color)
-    type_move = 'pawn' if col else 'place'
-    type_figure_from = 'pawn' if col else None
-    write_sql(
-        f"""insert into moves (id, id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from)
-         values(?, ?, ?, ?, ?, ?, ?)""",
-        ex.id, get_id(), type_move, f"{x}{y}", f"{x}{y}", type_figure_from, typ, color
-    )
+    label = QLabel(ex)
+    pixmap = QPixmap(f"chess_progect/{color}/{typ}.png")
+    label.setPixmap(pixmap)
+    label.move(int(50 + x * 100), 50 + 100 * (7 - y) - 2)
+    label.resize(pixmap.width(), pixmap.height())
+    label.setScaledContents(False)
+    label.setStyleSheet("background: transparent;")
+    label.show()
+    field[y][x] = Figure(label, typ, color)
+    id_move = choice(list(set(range(1, 10000)) - set(map(lambda h: int(h[0]), read_sql('select id_move from moves')))))
+    # write_sql(f"insert into moves (id, start, end, type_from, type_to, color, id_move) values(?, ?, ?, ?, ?, ?, ?)", ex.id, f"{x}{y}", f"{x}{y}", type_, typ, color, id_move)
     ex.set_order('white' if color == 'black' else 'black')
     checking(color)
     check_light()
 
 
+# удаление label с доски
 def delete(x, y):
     global field
     x, y = x, 900 - y
@@ -171,6 +196,7 @@ def delete(x, y):
             field[y][x] = '*'
 
 
+# вохвращает короля в зависимости от цвета
 def cords_king(color):
     for figs in field:
         for fig in figs:
@@ -179,6 +205,7 @@ def cords_king(color):
                     return cords(fig)
 
 
+# проверка открыт ли будет король при ходе
 def king_opend(x, y):
     global field
     figure = field[y][x]
@@ -192,6 +219,7 @@ def king_opend(x, y):
     return False
 
 
+# проверка будет ли закрык король при ходе
 def king_closed(from_x, from_y, to_x, to_y):
     global field
     figure = field[from_y][from_x]
@@ -206,12 +234,14 @@ def king_closed(from_x, from_y, to_x, to_y):
     return False
 
 
+# возвращает кординаты фигуры
 def cords(fig):
     x, y = fig.get_label().x(), 800 - fig.get_label().y()
     x, y = (x - 50) // 100, (y - 50) // 100
     return x, y
 
 
+# возвращает какие клетки под атакой от фигур конкретного цвета
 def attact(color_attakers):
     res = set()
     for figs in field:
@@ -224,12 +254,14 @@ def attact(color_attakers):
     return res
 
 
+# проверка бьет ли фигура другую фигуру
 def fight(fig1, fig2):
     if isinstance(fig1, Figure) and isinstance(fig2, Figure):
         return fig1.get_color() != fig2.get_color()
     return True
 
 
+# создает label
 def make_label(filename, x, y):
     label = QLabel(ex)
     pixmap = QPixmap(filename)
@@ -243,6 +275,7 @@ def make_label(filename, x, y):
     return label
 
 
+# возвращает возможные ходы только с базовыми правилами
 def possib_move(x, y, figur, mov_fight=True):
     name = figur.get_typ()
     if name == 'knight':
@@ -342,11 +375,7 @@ def possib_move(x, y, figur, mov_fight=True):
         return res_list
 
 
-# создание уникального id для хода:
-def get_id():
-    return choice(list(set(range(1, 10000)) - set(map(lambda h: int(h[0]), read_sql('select id_move from moves')))))
-
-
+# основной класс приложения
 class Chess(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -363,12 +392,12 @@ class Chess(QMainWindow):
         self.setFixedSize(900, 900)
         self.setStyleSheet("QWidget {background-image: url('chess_progect/field.png');background-repeat: no-repeat;"
                            "background-position: left;background-size: cover;}")
-        self.new_game = QPushButton('Новая игра', self)
-        self.new_game.setGeometry(900, 0, 100, 25)
-        self.new_game.clicked.connect(field.start)
-        self.new_game.setStyleSheet("background: none;")
-        self.turn_order = QPushButton('Порядок вкл', self)
-        self.turn_order.setGeometry(900, 25, 100, 25)
+        self.restart = QPushButton('Рестарт', self)
+        self.restart.setGeometry(350, 0, 100, 25)
+        self.restart.clicked.connect(field.start)
+        self.restart.setStyleSheet("background: none;")
+        self.turn_order = QPushButton('Порядок ходов вкл', self)
+        self.turn_order.setGeometry(450, 0, 150, 25)
         self.turn_order.clicked.connect(self.turn)
         self.turn_order.setStyleSheet("background: none;")
         self.possible_moves = set()
@@ -376,34 +405,9 @@ class Chess(QMainWindow):
         self.check_white = None
         self.mate_draw = None
         self.back_button = QPushButton("Назад", self)
-        self.back_button.setGeometry(900, 50, 100, 25)
+        self.back_button.setGeometry(350, 25, 100, 20)
         self.back_button.clicked.connect(self.back)
         self.back_button.setStyleSheet("background: none;")
-        self.delet_button = QPushButton('Удалить', self)
-        self.delet_button.setGeometry(900, 75, 100, 25)
-        self.delet_button.clicked.connect(self.delet)
-        self.delet_button.setStyleSheet("background: none;")
-        self.button_group = QButtonGroup(self)
-        self.button_group.addButton(self.back_button)
-        self.button_group.addButton(self.delet_button)
-        self.button_group.addButton(self.new_game)
-        self.button_group.addButton(self.turn_order)
-        self.razv = QPushButton(self)
-        self.razv.setGeometry(850, 425, 50, 50)
-        self.razv.setStyleSheet(
-            '''QPushButton {
-                border: none;
-                background: none;
-                background-image: url(chess_progect/open.png);
-                background-repeat: no-repeat;
-                background-position: center;
-            }
-        ''')
-        self.razv.clicked.connect(self.open)
-        self.is_open = False
-        # self.restart_button = QPushButton(self)
-        # self.restart_button.setGeometry()
-
         if read_sql("select id from moves"):
             self.id = max(read_sql("select id from moves"))[0]
         else:
@@ -417,23 +421,10 @@ class Chess(QMainWindow):
         # self.change_button.setGeometry(450, 878, 100, 25)
         # self.change_button.clicked.connect(self.choice)
         # self.change_button.setStyleSheet("background: none;")
-
-    def open(self):
-        self.is_open = not self.is_open
-        if self.is_open:
-            self.setFixedSize(1000, 900)
-            for i in self.button_group.buttons():
-                i.show()
-        else:
-            self.setFixedSize(900, 900)
-            for i in self.button_group.buttons():
-                i.hide()
-        self.razv.setStyleSheet(
-            '''QPushButton {
-                border: none;
-                background: none;''' + f'''background-image: url(chess_progect/{'close' if self.is_open else 'open'}.png);
-                background-repeat: no-repeat;
-                background-position: center;''' + '}')
+        self.delet_button = QPushButton('Удалить', self)
+        self.delet_button.setGeometry(450, 25, 100, 20)
+        self.delet_button.clicked.connect(self.delet)
+        self.delet_button.setStyleSheet("background: none;")
 
     def delet(self):
         with sqlite3.connect('mov.sqlite') as conn:
@@ -463,40 +454,33 @@ class Chess(QMainWindow):
     #                 self.order = field[to_y][to_x].get_insert_color()
 
     def back(self):
-        moves = read_sql(
-            """select id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from
-            from moves where id = ?""",
-            self.id
-        )[::-1]
+        moves = read_sql("select start, end, type_from, type_to, color, id_move from moves where id = ?", self.id)[::-1]
         moves = moves[0] if moves else None
         if moves:
-            id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from = moves
-            from_x, from_y = int(cord_from[0]), int(cord_from[1])
-            to_x, to_y = int(cord_to[0]), int(cord_to[1])
-            if type_move == 'move':
-                self.order = field[to_y][to_x].get_color()
-                field[to_y][to_x].get_label().move(50 + from_x * 100, 50 + 100 * (7 - from_y))
-                field[to_y][to_x], field[from_y][from_x] = '*', field[to_y][to_x]
-                checking(field[from_y][from_x].get_color())
-            elif type_move == 'chop':
-                field[to_y][to_x].get_label().move(50 + from_x * 100, 50 + 100 * (7 - from_y))
-                field[to_y][to_x], field[from_y][from_x] = Figure(make_label(f"chess_progect/{color_from}/{type_figure_to}", to_x, to_y), type_figure_to, color_from), field[to_y][to_x]
-                self.order = color_from
-                checking(field[from_y][from_x].get_color())
-            elif type_move == 'delete':
-                field[from_y][from_x] = Figure(make_label(f"chess_progect/{color_from}/{type_figure_from}", from_x, from_y), type_figure_from, color_from)
-                checking(color_from)
-            elif type_move == 'place':
-                pass
-            check_light()
-            write_sql(f"delete from moves where id_move = {id_move}")
+            from_cords, to_cords, type_from, type_to, color, id_move = moves
+            from_x, from_y = int(from_cords[0]), int(from_cords[1])
+            to_x, to_y = int(to_cords[0]), int(to_cords[1])
+            if type_to:
+                if type_from == 'None':
+                    field[from_y][from_x].get_label().deleteLater()
+                    field[from_y][from_x] = '*'
+                else:
+                    field[from_y][from_x].get_label().deleteLater()
+                    field[from_y][from_x] = Figure(make_label(f"chess_progect/{color}/{type_from}", from_x, from_y), type_to, color)
+            # elif from_cords == to_cords:
+            #     field[from_y][from_x] = Figure(make_label(f"chess_progect/{color}/{type_from}", from_x, from_y), type_to, color)
+            else:
+                field[from_y][from_x], field[to_y][to_x] = field[to_y][to_x], '*'
+                field[from_y][from_x].get_label().move(50 + from_x * 100, 50 + (7 - from_y) * 100)
+                self.order = field[from_y][from_x].get_color()
+            # write_sql(f"delete from moves where id_move = {id_move}")
 
     def turn(self):
-        if self.turn_order.text() == 'Порядок вкл':
-            self.turn_order.setText('Порядок выкл')
+        if self.turn_order.text() == 'Порядок ходов вкл':
+            self.turn_order.setText('Порядок ходов выкл')
             self.order_is_not_important = True
         else:
-            self.turn_order.setText('Порядок вкл')
+            self.turn_order.setText('Порядок ходов вкл')
             self.order_is_not_important = False
 
     def music(self, type_of_event):
@@ -516,7 +500,16 @@ class Chess(QMainWindow):
                     self.cords_from = [x, y]
                     possible = itog_possible_moves(x, y)
                     for i in possible:
-                        self.possible_moves.add(make_label(f"chess_progect/possible_move.png", i[0], i[1]))
+                        label = QLabel(ex)
+                        pixmap = QPixmap(f"chess_progect/possible_move.png")
+                        label.setPixmap(pixmap)
+                        label.move(int(50 + i[0] * 100), 50 + 700 - 100 * i[1])
+                        label.resize(pixmap.width(), pixmap.height())
+                        label.setScaledContents(False)
+                        label.setStyleSheet("background: transparent;")
+                        label.lower()
+                        label.show()
+                        self.possible_moves.add(label)
                     cursor_pos = event.position().toPoint()
                     self.for_move.move(int(cursor_pos.x() - 50), int(cursor_pos.y() - 50))
         if event.button() == Qt.MouseButton.MiddleButton:
@@ -524,35 +517,19 @@ class Chess(QMainWindow):
         if event.button() == Qt.MouseButton.RightButton:
             x, y = int(event.position().x()), 900 - int(event.position().y())
             x, y = (x - 50) // 100, (y - 50) // 100
-            if x in range(8) and y in range(8):
-                fig = field[y][x]
-                if isinstance(fig, Figure):
-                    write_sql(
-                        f"""insert into moves (id, id_move, type_move, type_figure_from, color_from, cord_from, cord_to)
-                            values(?, ?, ?, ?, ?, ?, ?)"""
-                        , ex.id, get_id(), 'delete', fig.get_typ(), fig.get_color(), f'{x}{y}', f'{x}{y}'
-                    )
+            # if x in range(8) and y in range(8):
+            #     fig = field[y][x]
+            #     if isinstance(fig, Figure):
+            #         id_move = choice(
+            #             list(set(range(1, 10000)) - set(
+            #                 map(lambda h: int(h[0]), read_sql('select id_move from moves')))))
+            #         write_sql(f"insert into moves (id, start, end, type_from, color, id_move) values(?, ?, ?, ?, ?, ?)", self.id, f"{x}{y}", f"{x}{y}", fig.get_typ(), fig.get_color(), id_move)
             delete(int(event.position().x()), int(event.position().y()))
-            check_light()
 
     def mouseMoveEvent(self, event):
         cursor_pos = event.position().toPoint()
         if self.is_dragging:
             self.for_move.move(int(cursor_pos.x() - 50), int(cursor_pos.y() - 50))
-
-    def rooking(self, figur, typ, color, x, y):
-        if typ == 'king' and color == 'white' and x == 2 and y == 0:
-            field[0][0].get_label().move(3 * 100 + 50, 800 - 50)
-            field[0][3], field[0][0] = field[0][0], '*'
-        elif typ == 'king' and color == 'white' and x == 6 and y == 0:
-            field[0][7].get_label().move(5 * 100 + 50, 800 - 50)
-            field[0][5], field[0][7] = field[0][7], '*'
-        elif typ == 'king' and color == 'black' and x == 2 and y == 7:
-            field[7][0].get_label().move(3 * 100 + 50, 50)
-            field[7][3], field[7][0] = field[7][0], '*'
-        elif typ == 'king' and color == 'black' and x == 6 and y == 7:
-            field[7][7].get_label().move(5 * 100 + 50, 50)
-            field[7][5], field[7][7] = field[7][7], '*'
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -562,33 +539,38 @@ class Chess(QMainWindow):
                 x, y = int((int(cursor_pos.x()) - 50) // 100), int(((900 - int(cursor_pos.y())) - 50) // 100)
                 x1, y1 = self.cords_from[0], self.cords_from[1]
                 figur = field[y1][x1]
-                check = (x, y) in itog_possible_moves(x1, y1)
+                check = itog_possible_moves(x1, y1)
                 typ = figur.get_typ()
                 color = figur.get_color()
-                ravenstvo = not (x == x1 and y == y1)
-                order = self.order == figur.get_color() or self.order_is_not_important
                 for i in self.possible_moves:
                     i.deleteLater()
                 self.possible_moves = set()
-                if ravenstvo and check and order:
+                if not (x == x1 and y == y1) and (x, y) in check and (self.order == field[y1][x1].get_color() or
+                                                                      self.order_is_not_important) and self.vib_is:
                     if isinstance(field[y][x], Figure) and field[y][x].get_typ() == 'king':
                         return
-                    if isinstance(field[y][x], Figure):
-                        type_move = 'chop'
-                    else:
-                        type_move = 'move'
-                    type_figure_to = field[y][x].get_typ() if type_move == 'chop' else None
-                    color = field[y][x].get_color() if isinstance(field[y][x], Figure) else None
-                    write_sql(f"""
-                        insert into 
-                        moves (id, id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from)
-                        values(?, ?, ?, ?, ?, ?, ?, ?)""",
-                        self.id, get_id(), type_move, f"{x1}{y1}", f"{x}{y}", figur.get_typ(), type_figure_to, color
-                    )
+                    id_move = choice(
+                        list(set(range(1, 10000)) - set(map(lambda h: int(h[0]), read_sql('select id_move from moves')))))
+                    write_sql(f"insert into moves (id, start, end, type_from, id_move) values(?, ?, ?, ?, ?)", self.id, f"{x1}{y1}", f"{x}{y}", typ, id_move)
                     if not self.order_is_not_important:
                         self.order = 'black' if self.order == 'white' else 'white'
                     self.music('move')
-                    # self.rooking(figur, typ, color, x, y)
+                    if (typ == 'king' and color == 'white'
+                            and x == 2 and y == 0 and not figur.get_mov()):
+                        field[0][0].get_label().move(3 * 100 + 50, 800 - 50)
+                        field[0][3], field[0][0] = field[0][0], '*'
+                    elif (typ == 'king' and color == 'white'
+                          and x == 6 and y == 0 and not figur.get_mov()):
+                        field[0][7].get_label().move(5 * 100 + 50, 800 - 50)
+                        field[0][5], field[0][7] = field[0][7], '*'
+                    elif (typ == 'king' and color == 'black'
+                          and x == 2 and y == 7 and not figur.get_mov()):
+                        field[7][0].get_label().move(3 * 100 + 50, 50)
+                        field[7][3], field[7][0] = field[7][0], '*'
+                    elif (typ == 'king' and color == 'black'
+                          and x == 6 and y == 7 and not figur.get_mov()):
+                        field[7][7].get_label().move(5 * 100 + 50, 50)
+                        field[7][5], field[7][7] = field[7][7], '*'
                     field[y1][x1].mov()
                     self.for_move.move(x * 100 + 50, 800 - (y * 100 + 50))
                     if isinstance(field[y][x], Figure):
@@ -613,6 +595,7 @@ class Chess(QMainWindow):
         self.order = color
 
 
+# класс основного поля игры
 class Field:
     def __init__(self):
         self.field = []
@@ -631,10 +614,6 @@ class Field:
             label.deleteLater()
         self.field = [['*' for _ in range(8)] for _ in range(8)]
         types_of_chess = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook']
-        # for i in range(8):
-        #     label = make_label(f"chess_progect/{'black'}/{types_of_chess[i]}.png", 0, 0)
-        #     label.move(int(50 + i * 100), 50)
-        #     self.field[7][i] = Figure(label, types_of_chess[i], 'black')
         for i in range(1, 3):
             color = 'black' if i == 1 else 'white'
             mn = 6 if color == 'white' else 1
@@ -659,6 +638,7 @@ class Field:
         self.field[key] = value
 
 
+# класс окна для выбора фигуры
 class NewWindow(QMainWindow):
     button_clicked = pyqtSignal(int)
 
@@ -666,7 +646,7 @@ class NewWindow(QMainWindow):
         super().__init__()
         self.initUI(color)
 
-    def initUI(self, color):
+    def initUI(self, color, counter=None):
         self.setWindowTitle('Новое окно')
         a = "background-repeat: no-repeat; background-position: center; border: none; color: rgba(0, 0, 0, 0); }"
         sp = [
@@ -715,6 +695,7 @@ class NewWindow(QMainWindow):
         self.close()
 
 
+# функция для выбора фигруы с использование окна из прошлого класса
 def open_new_window(color=None):
     ex.vib_is = False
     ap = QApplication.instance()
