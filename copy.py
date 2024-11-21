@@ -474,7 +474,7 @@ class Chess(QMainWindow):
             id_move, type_move, cord_from, cord_to, type_figure_from, type_figure_to, color_from = moves
             from_x, from_y = int(cord_from[0]), int(cord_from[1])
             to_x, to_y = int(cord_to[0]), int(cord_to[1])
-            if type_move == 'move':
+            if type_move in ['move', 'rooking']:
                 self.order = field[to_y][to_x].get_color()
                 field[to_y][to_x].get_label().move(50 + from_x * 100, 50 + 100 * (7 - from_y))
                 field[to_y][to_x], field[from_y][from_x] = '*', field[to_y][to_x]
@@ -499,6 +499,8 @@ class Chess(QMainWindow):
                 checking(color_from)
             check_light()
             write_sql(f"delete from moves where id_move = {id_move}")
+            if type_move in ['pawn', 'rooking']:
+                self.back()
 
     def turn(self):
         if self.turn_order.text() == 'Порядок вкл':
@@ -551,7 +553,7 @@ class Chess(QMainWindow):
 
     def rooking(self, typ, color, x, y):
         f = False
-        type_move = 'move'
+        type_move = 'rooking'
         if typ == 'king' and color == 'white' and x == 2 and y == 0:
             field[0][0].get_label().move(3 * 100 + 50, 800 - 50)
             field[0][3], field[0][0] = field[0][0], '*'
